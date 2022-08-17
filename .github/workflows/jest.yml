@@ -1,5 +1,5 @@
 name: Auto test
-on: push
+on: pull_request
 jobs:
   run-jest:
     runs-on: ubuntu-latest

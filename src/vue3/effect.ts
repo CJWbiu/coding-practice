@@ -1,3 +1,5 @@
+import { ITERATE_KEY, TriggerOpTypes } from "./shared";
+
 type ReactiveEffect = Function & {
   deps?: Set<Function>[];
   options?: EffectOptions;
@@ -40,22 +42,40 @@ export function track(target: any, key: string | symbol) {
   activeEffect.deps!.push(deps);
 }
 
-export function trigger(target: any, key: string | symbol) {
+export function trigger(
+  target: any,
+  key: string | symbol,
+  type: TriggerOpTypes
+) {
   const despMap = targetMap.get(target);
 
   if (!despMap) {
     return;
   }
 
-  const effects = despMap.get(key);
+  const effects = despMap.get(key) ?? [];
+
+  // 获取与ITERATE_KEY相关的副作用
+  const iterateEffects = despMap.get(ITERATE_KEY) ?? [];
+
   const doEffects = new Set<ReactiveEffect>();
-  effects!.forEach((effect) => {
+
+  effects?.forEach((effect) => {
     // 避免在effect中执行xx++操作
     // 在effect还未执行完就触发track和trigger导致无限循环
     if (effect !== activeEffect) {
       doEffects.add(effect);
     }
   });
+
+  // 新增、删除属性需要触发for in操作的副作用
+  if (type === TriggerOpTypes.ADD || type === TriggerOpTypes.DELETE) {
+    iterateEffects?.forEach((effect) => {
+      if (effect !== activeEffect) {
+        doEffects.add(effect);
+      }
+    });
+  }
 
   doEffects.forEach((effect) => {
     if (effect?.options?.scheduler) {

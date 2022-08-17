@@ -1,4 +1,4 @@
-import { effect } from "../effact";
+import { effect } from "../effect";
 import { reactive } from "../reactive";
 
 describe("effect", () => {
